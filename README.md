@@ -1,3 +1,5 @@
+git token : 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
+
 # 2026 관리툴 (Next.js)
 
 ## 요구사항
