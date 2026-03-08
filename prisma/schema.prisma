@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// 프로그램 (관리툴에서 조회/요일 업데이트에 사용)
+model Project {
+  pj_seq         BigInt   @id
+  pjname         String   @db.VarChar(300)
+  project_status Int?
+  ptype          String?  @db.Char(1)
+  cat_id         String?  @db.Char(6)
+  class_id       String?  @db.Char(5)
+  client_idx     String?  @db.Char(1)
+  pj_startdate   DateTime?
+  pj_enddate     DateTime?
+  service_day    Int[]
+  service_day2   String?  @db.VarChar(10)
+  moddate        DateTime?
+  catd_id        String?  @db.Char(7)
+  par_class_id   String?  @db.Char(5)
+  crtime         String[]
+  crtype         String?  @db.Char(1)
+  tnms_pjname    String?  @db.VarChar(255)
+  bodysizelimit  Int?
+  cr_status      Int?
+
+  @@map("project")
+}
+
+/// 방송국 리스트
+model Pclass {
+  class_id     String  @id @db.Char(5)
+  class_name   String? @db.VarChar(100)
+  par_class_id String? @db.Char(5)
+  status       Int?
+
+  @@map("pclass")
+}
+
+/// 다중 방송국 등록 (프로그램별 추가 방송사)
+model GrpPclass {
+  class_id     String  @db.Char(5)
+  grp_class_id String? @db.VarChar(255)
+  pj_seq       BigInt
+
+  @@id([class_id, pj_seq])
+  @@index([pj_seq], map: "idx_grp_pclass")
+  @@map("grp_pclass")
+}
+
+/// 트위터 수동수집대상 (truncate -> insert)
+model XxxPjlist1 {
+  pj_seq BigInt @id
+
+  @@map("xxx_pjlist1")
+}
