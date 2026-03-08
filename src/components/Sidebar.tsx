@@ -16,7 +16,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-dvh w-72 flex-col border-r border-white/10 bg-zinc-950/60 px-4 py-4">
+    <aside className="flex h-dvh w-72 flex-col border-r border-zinc-800 bg-zinc-900/95 px-4 py-4">
       <div className="px-2 pb-4">
         <div className="text-sm font-semibold text-zinc-100">관리툴</div>
         <div className="text-xs text-zinc-400">2026 운영 페이지</div>
@@ -30,10 +30,10 @@ export function Sidebar() {
               key={it.href}
               href={it.href}
               className={[
-                "rounded-lg px-3 py-2 transition",
+                "rounded-lg px-3 py-2 border transition-colors",
                 active
-                  ? "bg-white/10 text-zinc-50"
-                  : "text-zinc-300 hover:bg-white/5 hover:text-zinc-50",
+                  ? "bg-indigo-500/90 border-indigo-400/80 text-white shadow-sm"
+                  : "border-transparent text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-50",
               ].join(" ")}
             >
               <div className="text-sm font-medium">{it.label}</div>

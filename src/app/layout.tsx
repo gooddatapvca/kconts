@@ -27,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="ko" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-50`}
+        className={`${geistSans.variable} ${
+          geistMono.variable
+        } antialiased bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-50`}
       >
         <ToasterProvider>
           <div className="flex min-h-dvh">

@@ -69,7 +69,7 @@ export default function TwitterManualPage() {
         subtitle="프로그램번호를 콤마(,)로 구분해 입력 → 등록(기존 데이터는 truncate 후 insert)"
       />
 
-      <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
         <label className="block text-sm font-medium text-zinc-200">
           프로그램번호 입력 (텍스트, 콤마로 구분)
         </label>
@@ -77,7 +77,7 @@ export default function TwitterManualPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="예: 85, 120, 6"
-          className="mt-2 h-28 w-full resize-none rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-50 outline-none ring-0 placeholder:text-zinc-600 focus:border-white/20"
+          className="mt-2 h-28 w-full resize-none rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-50 outline-none ring-0 placeholder:text-zinc-500 focus:border-emerald-400/70"
         />
 
         <div className="mt-3 flex items-center justify-between gap-3">
@@ -87,13 +87,13 @@ export default function TwitterManualPage() {
           <button
             onClick={onSave}
             disabled={saving}
-            className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? "등록 중..." : "등록"}
           </button>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
             <div className="text-xs font-semibold text-zinc-200">등록 전 → 후 (diff)</div>
             <div className="mt-1 text-xs text-zinc-400">
               추가 <span className="text-zinc-200">{diff.added.length}</span> / 삭제{" "}
@@ -126,7 +126,7 @@ export default function TwitterManualPage() {
               </div>
             ) : null}
           </div>
-          <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
             <div className="text-xs font-semibold text-zinc-200">입력 검증</div>
             <div className="mt-1 text-xs text-zinc-400">
               숫자만 인식합니다. 콤마로 구분하고 공백은 무시합니다.
@@ -135,12 +135,12 @@ export default function TwitterManualPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+      <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-semibold text-zinc-100">등록된 프로그램번호</div>
           <button
             onClick={refresh}
-            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/5"
+            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-100 hover:bg-zinc-800/80"
           >
             새로고침
           </button>

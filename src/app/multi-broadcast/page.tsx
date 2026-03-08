@@ -132,7 +132,7 @@ export default function MultiBroadcastPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium text-zinc-200">
@@ -142,7 +142,7 @@ export default function MultiBroadcastPage() {
                 value={pjSeq}
                 onChange={(e) => setPjSeq(e.target.value)}
                 placeholder="예: 85"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+                className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
               />
             </div>
             <div>
@@ -151,7 +151,7 @@ export default function MultiBroadcastPage() {
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
                 placeholder="예: 디스커버리 채널/ENA PLAY"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+                className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
               />
             </div>
           </div>
@@ -163,11 +163,11 @@ export default function MultiBroadcastPage() {
                 value={stationQ}
                 onChange={(e) => setStationQ(e.target.value)}
                 placeholder="방송국 검색"
-                className="w-44 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+                className="w-44 rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
               />
             </div>
 
-            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-white/10 bg-black/20 p-2">
+            <div className="mt-2 max-h-80 overflow-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-2">
               {filteredStations.length === 0 ? (
                 <div className="p-2 text-sm text-zinc-500">검색 결과 없음</div>
               ) : (
@@ -210,13 +210,13 @@ export default function MultiBroadcastPage() {
             <button
               onClick={onSave}
               disabled={saving}
-              className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "등록 중..." : "등록"}
             </button>
           </div>
 
-          <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
             <div className="text-xs font-semibold text-zinc-200">등록 전 → 후 (diff)</div>
             <div className="mt-1 text-xs text-zinc-400">
               현재:{" "}
@@ -252,7 +252,7 @@ export default function MultiBroadcastPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold text-zinc-100">다중방송 등록된 프로그램</div>
             <div className="flex items-center gap-2">
@@ -260,11 +260,11 @@ export default function MultiBroadcastPage() {
                 value={programQ}
                 onChange={(e) => setProgramQ(e.target.value)}
                 placeholder="프로그램명/번호 검색"
-                className="w-48 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+                className="w-48 rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
               />
               <button
                 onClick={refresh}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/5"
+                className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-100 hover:bg-zinc-800/80"
               >
                 새로고침
               </button>

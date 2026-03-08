@@ -91,13 +91,13 @@ export default function MultiWeekdayPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <label className="block text-sm font-medium text-zinc-200">프로그램번호</label>
           <input
             value={pjSeq}
             onChange={(e) => setPjSeq(e.target.value)}
             placeholder="예: 85"
-            className="mt-2 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+            className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
           />
 
           <div className="mt-4">
@@ -106,7 +106,7 @@ export default function MultiWeekdayPage() {
               {WEEKDAYS.map((d) => (
                 <label
                   key={d.key}
-                  className="flex cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5"
+                  className="flex cursor-pointer items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/80 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800/80"
                 >
                   <span>{d.label}</span>
                   <input
@@ -122,7 +122,7 @@ export default function MultiWeekdayPage() {
             <div className="mt-2 text-xs text-zinc-500">
               선택됨: <span className="text-zinc-200">{formatWeekdays(pickedDays)}</span>
             </div>
-            <div className="mt-3 rounded-lg border border-white/10 bg-black/20 p-3">
+            <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/80 p-3">
               <div className="text-xs font-semibold text-zinc-200">등록 전 → 후 (diff)</div>
               <div className="mt-1 text-xs text-zinc-400">
                 현재:{" "}
@@ -159,14 +159,14 @@ export default function MultiWeekdayPage() {
           <div className="mt-4 flex items-center justify-end gap-3">
             <button
               onClick={() => setSelected({})}
-              className="rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-200 hover:bg-white/5"
+              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-100 hover:bg-zinc-800/80"
             >
               초기화
             </button>
             <button
               onClick={onSave}
               disabled={saving}
-              className="inline-flex items-center justify-center rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "등록 중..." : "등록"}
             </button>
@@ -174,7 +174,7 @@ export default function MultiWeekdayPage() {
 
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-zinc-950/40 p-4">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm font-semibold text-zinc-100">프로그램 설정된 방송요일</div>
             <div className="flex items-center gap-2">
@@ -182,11 +182,11 @@ export default function MultiWeekdayPage() {
                 value={listQ}
                 onChange={(e) => setListQ(e.target.value)}
                 placeholder="프로그램명/번호 검색"
-                className="w-48 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-600 focus:border-white/20"
+                className="w-48 rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
               />
               <button
                 onClick={refresh}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-zinc-200 hover:bg-white/5"
+                className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-100 hover:bg-zinc-800/80"
               >
                 새로고침
               </button>
