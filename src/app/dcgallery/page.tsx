@@ -89,6 +89,8 @@ export default function DcgalleryPage() {
 
   async function onDelete(r: Row) {
     if (!r.pj || !r.galtype || !r.galid) return;
+    const ok = window.confirm("삭제하시겠습니까?");
+    if (!ok) return;
     try {
       await fetchJson<{ ok: boolean }>("/api/dcgallery", {
         method: "DELETE",
@@ -110,7 +112,7 @@ export default function DcgalleryPage() {
   }, [refresh]);
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full max-w-none">
       <PageHeader
         title="DC갤러리-프로그램 등록"
         subtitle="프로그램번호 + 갤러리종류 + 갤러리ID 등록 (추가 버튼으로 입력폼 추가)"
@@ -265,7 +267,7 @@ export default function DcgalleryPage() {
           ) : filteredRows.length === 0 ? (
             <div className="text-sm text-zinc-400">등록된 항목이 없습니다.</div>
           ) : (
-            <div className="max-h-[520px] overflow-auto rounded-lg border border-white/10">
+            <div className="max-h-[520px] overflow-auto rounded-lg border border-zinc-800">
               <table className="w-full table-fixed text-left text-sm">
                 <thead className="sticky top-0 bg-zinc-950">
                   <tr className="text-xs text-zinc-400">
@@ -273,7 +275,7 @@ export default function DcgalleryPage() {
                     <th className="w-56 px-3 py-2">프로그램명</th>
                     <th className="w-28 px-3 py-2">종류</th>
                     <th className="px-3 py-2">갤러리ID</th>
-                    <th className="w-20 px-3 py-2"></th>
+                    <th className="w-24 px-3 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -282,13 +284,21 @@ export default function DcgalleryPage() {
                       <td className="px-3 py-2 font-mono text-xs text-zinc-300">
                         {r.pj ?? "-"}
                       </td>
-                      <td className="px-3 py-2 text-zinc-100">{r.pjname ?? "-"}</td>
+                      <td className="px-3 py-2 text-zinc-100">
+                        <div className="truncate" title={r.pjname ?? undefined}>
+                          {r.pjname ?? "-"}
+                        </div>
+                      </td>
                       <td className="px-3 py-2 text-zinc-200">{r.galtype ?? "-"}</td>
-                      <td className="px-3 py-2 text-zinc-200">{r.galid ?? "-"}</td>
-                      <td className="px-3 py-2 text-right">
+                      <td className="px-3 py-2 text-zinc-200 overflow-hidden">
+                        <div className="truncate" title={r.galid ?? undefined}>
+                          {r.galid ?? "-"}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
                         <button
                           onClick={() => void onDelete(r)}
-                          className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-200 hover:bg-white/5"
+                          className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-100 hover:bg-zinc-800/80"
                         >
                           삭제
                         </button>

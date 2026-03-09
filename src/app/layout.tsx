@@ -29,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${
           geistMono.variable
-        } antialiased bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-50`}
+        } antialiased overflow-x-hidden bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-50`}
       >
         <ToasterProvider>
           <div className="flex min-h-dvh">
