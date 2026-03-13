@@ -125,13 +125,13 @@ export default function MultiBroadcastPage() {
   );
 
   return (
-    <div className="max-w-7xl">
+    <div className="w-full max-w-none">
       <PageHeader
         title="다중 방송국 등록"
         subtitle="프로그램번호(1개) + 다중방송국명 + 방송국명(복수 선택) 등록"
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_1.9fr]">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -278,10 +278,10 @@ export default function MultiBroadcastPage() {
               <table className="w-full table-auto text-left text-sm">
                 <thead className="sticky top-0 bg-zinc-950">
                   <tr className="text-xs text-zinc-400">
-                    <th className="w-24 px-3 py-2">번호</th>
-                    <th className="w-72 px-3 py-2">프로그램명</th>
-                    <th className="w-52 px-3 py-2">방송사</th>
-                    <th className="px-3 py-2">추가 방송사</th>
+                    <th className="w-20 px-3 py-2">번호</th>
+                    <th className="w-64 px-3 py-2">프로그램명</th>
+                    <th className="w-40 px-3 py-2">방송사</th>
+                    <th className="w-[18rem] px-3 py-2">추가 방송사</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -299,7 +299,7 @@ export default function MultiBroadcastPage() {
                         </button>
                       </td>
                       <td className="px-3 py-2 text-zinc-200">{r.base_class ?? "-"}</td>
-                      <td className="px-3 py-2 text-zinc-200">
+                      <td className="px-3 py-2 text-zinc-200 whitespace-normal break-words">
                         {r.extra_classes.length ? r.extra_classes.join(" / ") : "-"}
                       </td>
                     </tr>
