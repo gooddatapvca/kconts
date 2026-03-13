@@ -17,12 +17,19 @@ export async function GET() {
         p.pj_seq,
         p.pjname,
         pc.class_name AS base_class,
-        ARRAY_REMOVE(ARRAY_AGG(DISTINCT pc2.class_name), NULL) AS extra_classes,
-        ARRAY_REMOVE(ARRAY_AGG(DISTINCT g.grp_class_id), NULL) AS group_names
+        ARRAY_REMOVE(
+          ARRAY_AGG(DISTINCT COALESCE(pc2.class_name, g.class_id)),
+          NULL
+        ) AS extra_classes,
+        ARRAY_REMOVE(
+          ARRAY_AGG(DISTINCT COALESCE(pcg.class_name, g.grp_class_id)),
+          NULL
+        ) AS group_names
       FROM project p
-      LEFT JOIN pclass pc ON pc.class_id = p.class_id
-      LEFT JOIN grp_pclass g ON g.pj_seq = p.pj_seq
-      LEFT JOIN pclass pc2 ON pc2.class_id = g.class_id
+      INNER JOIN grp_pclass g ON g.pj_seq = p.pj_seq
+      INNER JOIN pclass pc ON pc.class_id = p.class_id
+      INNER JOIN pclass pc2 ON pc2.class_id = g.class_id
+      LEFT JOIN pclass pcg ON pcg.class_id = g.grp_class_id
       WHERE COALESCE(p.project_status, 1) = 1
       GROUP BY p.pj_seq, p.pjname, pc.class_name
       ORDER BY p.pj_seq DESC
@@ -69,7 +76,7 @@ export async function POST(req: Request) {
   await prisma.$transaction(async (tx) => {
     await tx.$executeRaw(Prisma.sql`DELETE FROM grp_pclass WHERE pj_seq = ${pjSeq}`);
     if (filtered.length) {
-      const values = filtered.map((cid) => Prisma.sql`(${cid}, ${groupName}, ${pjSeq})`);
+      const values = filtered.map((cid) => Prisma.sql`(${cid}, ${baseClassId}, ${pjSeq})`);
       await tx.$executeRaw(
         Prisma.sql`
           INSERT INTO grp_pclass (class_id, grp_class_id, pj_seq)

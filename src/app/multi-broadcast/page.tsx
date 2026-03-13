@@ -1,4 +1,4 @@
-"use client";
+ "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
@@ -125,7 +125,7 @@ export default function MultiBroadcastPage() {
   );
 
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-7xl">
       <PageHeader
         title="다중 방송국 등록"
         subtitle="프로그램번호(1개) + 다중방송국명 + 방송국명(복수 선택) 등록"
@@ -278,9 +278,9 @@ export default function MultiBroadcastPage() {
               <table className="w-full table-fixed text-left text-sm">
                 <thead className="sticky top-0 bg-zinc-950">
                   <tr className="text-xs text-zinc-400">
-                    <th className="w-20 px-3 py-2">번호</th>
-                    <th className="w-56 px-3 py-2">프로그램명</th>
-                    <th className="w-44 px-3 py-2">방송사</th>
+                    <th className="w-24 px-3 py-2">번호</th>
+                    <th className="w-72 px-3 py-2">프로그램명</th>
+                    <th className="w-52 px-3 py-2">방송사</th>
                     <th className="px-3 py-2">추가 방송사</th>
                   </tr>
                 </thead>
