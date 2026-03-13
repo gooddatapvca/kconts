@@ -275,7 +275,7 @@ export default function MultiBroadcastPage() {
             <div className="text-sm text-zinc-400">불러오는 중...</div>
           ) : (
             <div className="max-h-[520px] overflow-auto rounded-lg border border-white/10">
-              <table className="w-full table-fixed text-left text-sm">
+              <table className="w-full table-auto text-left text-sm">
                 <thead className="sticky top-0 bg-zinc-950">
                   <tr className="text-xs text-zinc-400">
                     <th className="w-24 px-3 py-2">번호</th>
