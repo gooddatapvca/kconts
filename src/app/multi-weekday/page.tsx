@@ -57,6 +57,25 @@ export default function MultiWeekdayPage() {
     setLoading(false);
   }, [toast]);
 
+  const onDelete = useCallback(
+    async (r: Row) => {
+      const ok = window.confirm("삭제를 하시겠습니까?");
+      if (!ok) return;
+      try {
+        await fetchJson<{ ok: boolean }>("/api/projects/weekdays", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pjSeq: r.pj_seq }),
+        });
+        toast.success("삭제 완료", `${r.pjname} (${r.pj_seq})`);
+        await refresh();
+      } catch (e) {
+        toast.error("삭제 실패", errorMessage(e, "삭제 실패"));
+      }
+    },
+    [refresh, toast]
+  );
+
   async function onSave() {
     setSaving(true);
     try {
@@ -203,6 +222,7 @@ export default function MultiWeekdayPage() {
                     <th className="w-24 px-3 py-2">번호</th>
                     <th className="px-3 py-2">프로그램명</th>
                     <th className="w-56 px-3 py-2">등록 요일</th>
+                    <th className="w-24 px-3 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,6 +241,14 @@ export default function MultiWeekdayPage() {
                       </td>
                       <td className="px-3 py-2 text-zinc-200">
                         {formatWeekdays(r.service_day)}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <button
+                          onClick={() => void onDelete(r)}
+                          className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-100 hover:bg-zinc-800/80"
+                        >
+                          삭제
+                        </button>
                       </td>
                     </tr>
                   ))}

@@ -87,3 +87,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, days });
 }
 
+export async function DELETE(req: Request) {
+  const body = (await req.json().catch(() => null)) as
+    | { pjSeq?: string | number }
+    | null;
+
+  const pjSeqRaw = String(body?.pjSeq ?? "").trim();
+  if (!/^\d+$/.test(pjSeqRaw)) {
+    return NextResponse.json({ ok: false, error: "Invalid pjSeq" }, { status: 400 });
+  }
+  const pjSeq = BigInt(pjSeqRaw);
+
+  await prisma.$executeRaw(Prisma.sql`DELETE FROM project_sday WHERE pj_seq = ${pjSeq}`);
+
+  return NextResponse.json({ ok: true });
+}
+
