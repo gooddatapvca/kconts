@@ -7,24 +7,25 @@ export async function GET() {
     Array<{ pj_seq: bigint | number | string; pjname: string; service_day: number[] | null }>
   >(
     Prisma.sql`
-      SELECT pj_seq, pjname, service_day
-      FROM (
-        SELECT
-          p.pj_seq,
-          p.pjname,
-          (
-            SELECT COALESCE(ARRAY_AGG(DISTINCT d ORDER BY d), '{}')::int[]
-            FROM unnest(
-              COALESCE(p.service_day, '{}')::int[]
-              || COALESCE(ps.service_day, '{}')::int[]
-            ) AS d
-          ) AS service_day
-        FROM project p
-        INNER JOIN project_sday ps ON ps.pj_seq = p.pj_seq
+      SELECT
+            psm.pj_seq,
+            p.pjname,
+            ARRAY_AGG(psm.day_val ORDER BY psm.idx)::int[] AS service_day
+        FROM (
+            SELECT
+                pj_seq,
+                gs.idx,
+                MAX(COALESCE(service_day[gs.idx], 0)) AS day_val
+            FROM project_sday
+            CROSS JOIN generate_series(1, 7) AS gs(idx)
+            GROUP BY pj_seq, gs.idx
+        ) psm
+        JOIN project p
+            ON p.pj_seq = psm.pj_seq
         WHERE COALESCE(p.project_status, 1) = 1
-      ) t
-      ORDER BY pj_seq DESC
-      LIMIT 500
+        GROUP BY psm.pj_seq, p.pjname
+        ORDER BY psm.pj_seq DESC
+        LIMIT 500;
     `
   );
 
@@ -57,14 +58,24 @@ export async function POST(req: Request) {
     )
   ).sort((a, b) => a - b);
 
-  const arr =
-    days.length === 0
-      ? Prisma.sql`'{}'::int[]`
-      : Prisma.sql`ARRAY[${Prisma.join(days.map((d) => Prisma.sql`${d}`))}]::int[]`;
+  // 선택된 요일을 project_sday에 "요일당 1행"으로 저장한다.
+  // 예: [1,2] -> {1,0,0,0,0,0,0}, {0,1,0,0,0,0,0}
+  const rowsToInsert = days.map((d) => {
+    const flags = Array.from({ length: 7 }, (_, i) => (i + 1 === d ? 1 : 0));
+    return Prisma.sql`(${pjSeq}, ARRAY[${Prisma.join(flags.map((n) => Prisma.sql`${n}`))}]::int[])`;
+  });
 
-  await prisma.$executeRaw(
-    Prisma.sql`UPDATE project SET service_day = ${arr} WHERE pj_seq = ${pjSeq}`
-  );
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw(Prisma.sql`DELETE FROM project_sday WHERE pj_seq = ${pjSeq}`);
+    if (rowsToInsert.length) {
+      await tx.$executeRaw(
+        Prisma.sql`
+          INSERT INTO project_sday (pj_seq, service_day)
+          VALUES ${Prisma.join(rowsToInsert)}
+        `
+      );
+    }
+  });
 
   return NextResponse.json({ ok: true, days });
 }
