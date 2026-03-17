@@ -84,13 +84,13 @@ export default function MultiWeekdayPage() {
   }, [refresh]);
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full max-w-none">
       <PageHeader
         title="프로그램-다중요일 등록"
         subtitle="프로그램번호 + 요일 선택 → project.service_day(int[]) 갱신"
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.8fr]">
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
           <label className="block text-sm font-medium text-zinc-200">프로그램번호</label>
           <input
@@ -197,12 +197,12 @@ export default function MultiWeekdayPage() {
             <div className="text-sm text-zinc-400">불러오는 중...</div>
           ) : (
             <div className="max-h-[520px] overflow-auto rounded-lg border border-white/10">
-              <table className="w-full table-fixed text-left text-sm">
+              <table className="w-full table-auto text-left text-sm">
                 <thead className="sticky top-0 bg-zinc-950">
                   <tr className="text-xs text-zinc-400">
-                    <th className="w-20 px-3 py-2">번호</th>
+                    <th className="w-24 px-3 py-2">번호</th>
                     <th className="px-3 py-2">프로그램명</th>
-                    <th className="w-40 px-3 py-2">등록 요일</th>
+                    <th className="w-56 px-3 py-2">등록 요일</th>
                   </tr>
                 </thead>
                 <tbody>

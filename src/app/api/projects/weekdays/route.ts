@@ -11,7 +11,13 @@ export async function GET() {
       SELECT
             psm.pj_seq,
             p.pjname,
-            ARRAY_AGG(psm.day_val ORDER BY psm.idx)::int[] AS service_day
+            ARRAY_REMOVE(
+              ARRAY_AGG(
+                CASE WHEN psm.day_val > 0 THEN psm.idx ELSE NULL END
+                ORDER BY psm.idx
+              ),
+              NULL
+            )::int[] AS service_day
         FROM (
             SELECT
                 pj_seq,
