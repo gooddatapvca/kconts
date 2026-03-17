@@ -8,8 +8,21 @@ export async function GET() {
   >(
     Prisma.sql`
       SELECT pj_seq, pjname, service_day
-      FROM project
-      WHERE COALESCE(project_status, 1) = 1
+      FROM (
+        SELECT
+          p.pj_seq,
+          p.pjname,
+          (
+            SELECT COALESCE(ARRAY_AGG(DISTINCT d ORDER BY d), '{}')::int[]
+            FROM unnest(
+              COALESCE(p.service_day, '{}')::int[]
+              || COALESCE(ps.service_day, '{}')::int[]
+            ) AS d
+          ) AS service_day
+        FROM project p
+        INNER JOIN project_sday ps ON ps.pj_seq = p.pj_seq
+        WHERE COALESCE(p.project_status, 1) = 1
+      ) t
       ORDER BY pj_seq DESC
       LIMIT 500
     `
