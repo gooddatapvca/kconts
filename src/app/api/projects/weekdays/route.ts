@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+//2026.03.17
 export async function GET() {
   const rows = await prisma.$queryRaw<
     Array<{ pj_seq: bigint | number | string; pjname: string; service_day: number[] | null }>
