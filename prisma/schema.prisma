@@ -52,17 +52,6 @@ model GrpPclass {
   @@map("grp_pclass")
 }
 
-/// 프로그램-다중요일 (요일당 1행)
-/// PK: (pj_seq, service_day)
-model ProjectSday {
-  pj_seq      BigInt
-  service_day Int[]
-
-  @@id([pj_seq, service_day])
-  @@index([pj_seq])
-  @@map("project_sday")
-}
-
 /// 트위터 수동수집대상 (truncate -> insert)
 model XxxPjlist1 {
   pj_seq BigInt @id
