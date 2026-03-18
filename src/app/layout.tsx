@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
 import { ToasterProvider } from "@/components/Toaster";
 
 const geistSans = Geist({
@@ -15,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "관리툴 (2026)",
-  description: "FastAPI/ChatGPT 프로젝트용 운영 관리툴",
+  title: "kconts",
+  description: "kconts 서비스",
 };
 
 export default function RootLayout({
@@ -31,12 +30,7 @@ export default function RootLayout({
           geistMono.variable
         } antialiased overflow-x-hidden bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 text-zinc-50`}
       >
-        <ToasterProvider>
-          <div className="flex min-h-dvh">
-            <Sidebar />
-            <main className="flex-1 p-6">{children}</main>
-          </div>
-        </ToasterProvider>
+        <ToasterProvider>{children}</ToasterProvider>
       </body>
     </html>
   );

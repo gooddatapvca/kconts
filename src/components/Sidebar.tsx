@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 type NavItem = { href: string; label: string; desc?: string };
 
 const NAV: NavItem[] = [
-  { href: "/twitter-manual", label: "트위터 수동수집대상", desc: "xxx_pjlist1" },
-  { href: "/multi-broadcast", label: "다중 방송국 등록", desc: "grp_pclass" },
-  { href: "/multi-weekday", label: "프로그램 다중 요일", desc: "project.service_day" },
-  { href: "/dcgallery", label: "DC갤러리-프로그램", desc: "dcgallery" },
+  { href: "/admin/twitter-manual", label: "트위터 수동수집대상", desc: "xxx_pjlist1" },
+  { href: "/admin/multi-broadcast", label: "다중 방송국 등록", desc: "grp_pclass" },
+  { href: "/admin/multi-weekday", label: "프로그램 다중 요일", desc: "project.service_day" },
+  { href: "/admin/dcgallery", label: "DC갤러리-프로그램", desc: "dcgallery" },
 ];
 
 export function Sidebar() {
