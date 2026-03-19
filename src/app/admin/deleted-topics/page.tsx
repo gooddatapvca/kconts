@@ -99,9 +99,9 @@ export default function DeletedTopicsPage() {
       {rows.length === 0 && !loading ? (
         <p className="text-sm text-zinc-500">검색하면 목록이 표시됩니다.</p>
       ) : (
-        <div className="max-h-[min(70vh,640px)] overflow-auto rounded-lg border border-zinc-800">
-          <table className="w-full table-fixed text-left text-sm">
-            <thead className="sticky top-0 bg-zinc-950">
+        <div className="max-h-[min(70vh,640px)] overflow-auto rounded-lg border border-zinc-800 bg-zinc-900/80">
+          <table className="w-full table-fixed text-left text-sm text-zinc-100">
+            <thead className="sticky top-0 z-10 bg-zinc-950">
               <tr className="text-xs text-zinc-400">
                 <th className="w-14 px-3 py-2">top_seq</th>
                 <th className="w-24 px-3 py-2">프로그램</th>
@@ -115,7 +115,7 @@ export default function DeletedTopicsPage() {
               {rows.map((r) => (
                 <tr
                   key={r.top_seq}
-                  className="border-t border-white/10"
+                  className="border-t border-white/10 bg-zinc-950/50 hover:bg-zinc-800/40"
                 >
                   <td className="px-3 py-2 font-mono text-xs text-zinc-300">{r.top_seq}</td>
                   <td className="px-3 py-2 text-zinc-200">
