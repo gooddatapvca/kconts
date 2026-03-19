@@ -11,15 +11,17 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
+  /** 공백 제거 후 비교 → DB 프로그램명 중간 공백과 무관하게 매칭 */
+  const qCompact = q.replace(/\s/g, "");
 
-  if (!q) {
+  if (!qCompact) {
     return NextResponse.json(
       { ok: false, error: "프로그램명(일부)을 입력하세요." },
       { status: 400 }
     );
   }
 
-  const pattern = `%${q}%`;
+  const pattern = `%${qCompact}%`;
 
   const rows = await prisma.$queryRaw<
     Array<{
@@ -30,6 +32,7 @@ export async function GET(req: Request) {
       topic_type: string;
       person_seq: bigint | null;
       par_top_seq: number;
+      moddate: Date;
       pjname: string;
       topic_type_name: string | null;
     }>
@@ -43,13 +46,14 @@ export async function GET(req: Request) {
         t.topic_type,
         t.person_seq,
         t.par_top_seq,
+        t.moddate,
         p.pjname,
         tt.topic_type_name
       FROM topic t
       INNER JOIN project p ON p.pj_seq = t.pj_seq
       LEFT JOIN topictype tt ON tt.topic_type = t.topic_type
       WHERE t.top_status = 0
-        AND p.pjname ILIKE ${pattern}
+        AND regexp_replace(p.pjname, E'\\s', '', 'g') ILIKE ${pattern}
       ORDER BY t.top_seq DESC
       LIMIT 100
     `
@@ -65,6 +69,12 @@ export async function GET(req: Request) {
       topic_type: r.topic_type,
       person_seq: r.person_seq != null ? String(r.person_seq) : null,
       par_top_seq: r.par_top_seq,
+      moddate:
+        r.moddate instanceof Date
+          ? r.moddate.toISOString()
+          : typeof r.moddate === "string"
+            ? r.moddate
+            : String(r.moddate),
       pjname: r.pjname,
       topic_type_name: r.topic_type_name,
     })),

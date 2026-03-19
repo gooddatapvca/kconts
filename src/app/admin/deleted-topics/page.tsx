@@ -14,9 +14,24 @@ type Row = {
   topic_type: string;
   person_seq: string | null;
   par_top_seq: number;
+  moddate: string;
   pjname: string;
   topic_type_name: string | null;
 };
+
+function formatModdate(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
 
 export default function DeletedTopicsPage() {
   const toast = useToast();
@@ -70,7 +85,7 @@ export default function DeletedTopicsPage() {
     <div className="w-full max-w-none">
       <PageHeader
         title="삭제토픽 관리"
-        subtitle="프로그램명 일부 입력 → 미사용(top_status=0) 토픽 최대 100건 · 복구 시 top_status=1"
+        subtitle="프로그램명 일부 입력(공백 유무 무관) → 미사용(top_status=0) 토픽 최대 100건 · 복구 시 top_status=1"
       />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -99,16 +114,18 @@ export default function DeletedTopicsPage() {
       {rows.length === 0 && !loading ? (
         <p className="text-sm text-zinc-500">검색하면 목록이 표시됩니다.</p>
       ) : (
-        <div className="max-h-[min(70vh,640px)] overflow-auto rounded-lg border border-zinc-800 bg-zinc-900/80">
-          <table className="w-full table-fixed text-left text-sm text-zinc-100">
+        <div className="max-h-[min(70vh,640px)] overflow-x-auto overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-900/80">
+          <table className="w-full min-w-[960px] table-auto text-left text-sm text-zinc-100">
             <thead className="sticky top-0 z-10 bg-zinc-950">
               <tr className="text-xs text-zinc-400">
-                <th className="w-14 px-3 py-2">top_seq</th>
-                <th className="w-24 px-3 py-2">프로그램</th>
-                <th className="w-20 px-3 py-2">타입코드</th>
-                <th className="w-32 px-3 py-2">타입명</th>
-                <th className="px-3 py-2">top_name</th>
-                <th className="w-28 px-3 py-2"></th>
+                <th className="w-16 whitespace-nowrap px-3 py-2">top_seq</th>
+                <th className="min-w-[280px] px-3 py-2">프로그램</th>
+                <th className="w-40 whitespace-nowrap px-3 py-2">moddate</th>
+                <th className="w-28 whitespace-nowrap px-3 py-2">person_seq</th>
+                <th className="w-24 whitespace-nowrap px-3 py-2">타입코드</th>
+                <th className="min-w-[100px] px-3 py-2">타입명</th>
+                <th className="min-w-[120px] px-3 py-2">top_name</th>
+                <th className="w-24 whitespace-nowrap px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -118,19 +135,25 @@ export default function DeletedTopicsPage() {
                   className="border-t border-white/10 bg-zinc-950/50 hover:bg-zinc-800/40"
                 >
                   <td className="px-3 py-2 font-mono text-xs text-zinc-300">{r.top_seq}</td>
-                  <td className="px-3 py-2 text-zinc-200">
-                    <div className="truncate" title={r.pjname}>
+                  <td className="max-w-md px-3 py-2 align-top text-zinc-100">
+                    <div className="break-words" title={r.pjname}>
                       {r.pjname}
                     </div>
                   </td>
+                  <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-zinc-400">
+                    {formatModdate(r.moddate)}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs text-zinc-300">
+                    {r.person_seq ?? "—"}
+                  </td>
                   <td className="px-3 py-2 font-mono text-xs text-zinc-400">{r.topic_type}</td>
                   <td className="px-3 py-2 text-zinc-300">
-                    <div className="truncate" title={r.topic_type_name ?? undefined}>
+                    <div className="break-words" title={r.topic_type_name ?? undefined}>
                       {r.topic_type_name ?? "—"}
                     </div>
                   </td>
                   <td className="px-3 py-2 text-zinc-100">
-                    <div className="truncate" title={r.top_name}>
+                    <div className="break-words" title={r.top_name}>
                       {r.top_name}
                     </div>
                   </td>
