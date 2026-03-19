@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
+/** 갤러리 종류: null·공백·빈 문자열은 DB NULL로 저장 */
+function normalizeGaltype(v: unknown): string | null {
+  if (v == null) return null;
+  const t = String(v).trim();
+  return t === "" ? null : t;
+}
+
 export async function GET() {
   const rows = await prisma.$queryRaw<
     Array<{
@@ -44,13 +51,13 @@ export async function POST(req: Request) {
   const items = (body?.items ?? [])
     .map((it) => ({
       pj: String(it.pjSeq ?? "").trim(),
-      galtype: String(it.galtype ?? "").trim(),
+      galtype: normalizeGaltype(it.galtype),
       galid: String(it.galid ?? "").trim(),
     }))
-    .filter((it) => /^\d+$/.test(it.pj) && it.galtype && it.galid);
+    .filter((it) => /^\d+$/.test(it.pj) && it.galid);
 
   const dedupKey = (it: (typeof items)[number]) =>
-    `${it.pj}||${it.galtype}||${it.galid}`;
+    `${it.pj}||${it.galtype ?? ""}||${it.galid}`;
   const dedup = Array.from(new Map(items.map((it) => [dedupKey(it), it])).values());
 
   await prisma.$transaction(async (tx) => {
@@ -58,7 +65,9 @@ export async function POST(req: Request) {
       await tx.$executeRaw(
         Prisma.sql`
           DELETE FROM dcgallery
-          WHERE pj = ${it.pj} AND galtype = ${it.galtype} AND galid = ${it.galid}
+          WHERE pj = ${it.pj}
+            AND galid = ${it.galid}
+            AND galtype IS NOT DISTINCT FROM ${it.galtype}
         `
       );
       await tx.$executeRaw(
@@ -79,15 +88,20 @@ export async function DELETE(req: Request) {
     | null;
 
   const pj = String(body?.pj ?? "").trim();
-  const galtype = String(body?.galtype ?? "").trim();
+  const galtype = normalizeGaltype(body?.galtype);
   const galid = String(body?.galid ?? "").trim();
 
-  if (!/^\d+$/.test(pj) || !galtype || !galid) {
+  if (!/^\d+$/.test(pj) || !galid) {
     return NextResponse.json({ ok: false, error: "Invalid input" }, { status: 400 });
   }
 
   await prisma.$executeRaw(
-    Prisma.sql`DELETE FROM dcgallery WHERE pj = ${pj} AND galtype = ${galtype} AND galid = ${galid}`
+    Prisma.sql`
+      DELETE FROM dcgallery
+      WHERE pj = ${pj}
+        AND galid = ${galid}
+        AND galtype IS NOT DISTINCT FROM ${galtype}
+    `
   );
 
   return NextResponse.json({ ok: true });

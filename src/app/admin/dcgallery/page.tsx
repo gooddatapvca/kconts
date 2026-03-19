@@ -16,7 +16,8 @@ type Row = {
 
 type Draft = { pjSeq: string; galtype: string; galid: string };
 
-const DEFAULT_GALTYPE = "mgallery/";
+/** 갤러리 종류 없음(공백·미입력) 허용 — 신규 행 기본값은 빈칸 */
+const DEFAULT_GALTYPE = "";
 
 export default function DcgalleryPage() {
   const toast = useToast();
@@ -49,8 +50,10 @@ export default function DcgalleryPage() {
         galtype: d.galtype.trim(),
         galid: d.galid.trim(),
       }))
-      .filter((d) => /^\d+$/.test(d.pj) && d.galtype && d.galid);
-    const keys = normalizedDrafts.map((d) => `${d.pj}||${d.galtype}||${d.galid}`);
+      .filter((d) => /^\d+$/.test(d.pj) && d.galid);
+    const keys = normalizedDrafts.map(
+      (d) => `${d.pj}||${d.galtype || ""}||${d.galid}`
+    );
     const uniqueKeys = Array.from(new Set(keys));
     const willAdd = uniqueKeys.filter((k) => !existing.has(k));
     const already = uniqueKeys.filter((k) => existing.has(k));
@@ -88,14 +91,18 @@ export default function DcgalleryPage() {
   }
 
   async function onDelete(r: Row) {
-    if (!r.pj || !r.galtype || !r.galid) return;
+    if (!r.pj || !r.galid) return;
     const ok = window.confirm("삭제하시겠습니까?");
     if (!ok) return;
     try {
       await fetchJson<{ ok: boolean }>("/api/dcgallery", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pj: r.pj, galtype: r.galtype, galid: r.galid }),
+        body: JSON.stringify({
+          pj: r.pj,
+          galtype: r.galtype ?? null,
+          galid: r.galid,
+        }),
       });
       toast.success("삭제 완료", `${r.pjname ?? r.pj} · ${r.galid}`);
       await refresh();
@@ -156,7 +163,7 @@ export default function DcgalleryPage() {
                         )
                       )
                     }
-                    placeholder="예: mgallery/"
+                    placeholder="선택 · 예: mgallery/"
                     className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
                   />
                 </div>
@@ -280,7 +287,10 @@ export default function DcgalleryPage() {
                 </thead>
                 <tbody>
                   {filteredRows.map((r, idx) => (
-                    <tr key={`${r.pj}-${r.galtype}-${r.galid}-${idx}`} className="border-t border-white/10">
+                    <tr
+                      key={`${r.pj}-${r.galtype ?? ""}-${r.galid}-${idx}`}
+                      className="border-t border-white/10"
+                    >
                       <td className="px-3 py-2 font-mono text-xs text-zinc-300">
                         {r.pj ?? "-"}
                       </td>
