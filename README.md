@@ -1,5 +1,3 @@
-git token : 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
-
 # 2026 관리툴 (Next.js)
 
 ## 요구사항
@@ -64,6 +62,7 @@ npm run dev
 - `/multi-broadcast`: 다중 방송국 등록 (`grp_pclass`)
 - `/multi-weekday`: 프로그램-다중요일 등록 (`project.service_day`)
 - `/dcgallery`: DC갤러리-프로그램 등록 (`dcgallery`)
+- `/admin/deleted-topics`: 삭제(미사용) 토픽 조회·복구 (`topic`, `topictype`)
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 

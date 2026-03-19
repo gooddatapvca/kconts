@@ -58,3 +58,28 @@ model XxxPjlist1 {
 
   @@map("xxx_pjlist1")
 }
+
+/// 토픽(출연자) — top_status: 1 사용, 0 미사용
+model Topic {
+  top_seq     Int      @id(map: "topic_pk") @default(autoincrement())
+  top_name    String   @db.VarChar(100)
+  par_top_seq Int
+  pj_seq      Int
+  moddate     DateTime @default(now()) @db.Timestamp(6)
+  topic_type  String   @db.VarChar(10)
+  person_seq  BigInt?
+  top_status  Int?     @default(1) @db.SmallInt
+
+  @@index([pj_seq], map: "idx_topic_pjseq")
+  @@index([person_seq], map: "idx_topic_pseq")
+  @@map("topic")
+}
+
+/// 토픽 타입 정의 — topic.topic_type 과 매칭
+model Topictype {
+  topic_type      String    @id @db.VarChar(10)
+  topic_type_name String?   @db.VarChar(50)
+  moddate         DateTime? @default(now()) @db.Timestamp(6)
+
+  @@map("topictype")
+}
