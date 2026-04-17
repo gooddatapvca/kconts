@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sidebar } from "@/components/Sidebar";
+import { AdminShell } from "@/components/AdminShell";
 
 export const metadata: Metadata = {
   title: "관리툴 (2026)",
@@ -11,12 +11,5 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <div className="flex min-h-dvh">
-      <Sidebar />
-      <main className="min-h-dvh flex-1 bg-zinc-950 p-6 text-zinc-100">
-        {children}
-      </main>
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }

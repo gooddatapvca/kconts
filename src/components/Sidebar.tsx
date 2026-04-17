@@ -14,14 +14,30 @@ const NAV: NavItem[] = [
   { href: "/admin/filtering", label: "필터링 관리", desc: "raw_contents · 삭제/복구" },
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  onRequestCollapse?: () => void;
+};
+
+export function Sidebar({ onRequestCollapse }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-dvh w-72 flex-col border-r border-zinc-800 bg-zinc-900/95 px-4 py-4">
-      <div className="px-2 pb-4">
-        <div className="text-sm font-semibold text-zinc-100">관리툴</div>
-        <div className="text-xs text-zinc-400">2026 운영 페이지</div>
+    <aside className="flex h-dvh w-72 flex-col bg-zinc-900/95 px-4 py-4">
+      <div className="flex items-start justify-between gap-2 px-2 pb-4">
+        <div>
+          <div className="text-sm font-semibold text-zinc-100">관리툴</div>
+          <div className="text-xs text-zinc-400">2026 운영 페이지</div>
+        </div>
+        {onRequestCollapse ? (
+          <button
+            type="button"
+            onClick={onRequestCollapse}
+            className="shrink-0 rounded-md border border-zinc-600 bg-zinc-800/80 px-2 py-1 text-[11px] font-medium text-zinc-300 hover:bg-zinc-700 hover:text-zinc-50"
+            aria-label="메뉴 숨기기"
+          >
+            숨기기
+          </button>
+        ) : null}
       </div>
 
       <nav className="flex flex-col gap-1">

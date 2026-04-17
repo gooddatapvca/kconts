@@ -47,22 +47,6 @@ type DetailItem = {
   pjname: string;
 };
 
-function statusLabel(s: number | null | undefined): string {
-  if (s == null) return "—";
-  switch (s) {
-    case 0:
-      return "삭제";
-    case 1:
-      return "서비스";
-    case 3:
-      return "자동삭제";
-    case 9:
-      return "수집중";
-    default:
-      return String(s);
-  }
-}
-
 function formatTs(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -469,37 +453,46 @@ export default function FilteringAdminPage() {
           </div>
 
           <div className="max-h-[min(62vh,560px)] overflow-x-auto overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50">
-            <table className="w-full min-w-[880px] table-auto text-left text-sm text-zinc-100">
+            <table className="w-full min-w-[720px] table-fixed text-left text-sm text-zinc-100">
+              <colgroup>
+                <col className="w-14" />
+                <col className="w-24" />
+                <col className="w-[7rem]" />
+                <col className="w-[45%]" />
+                <col className="w-[4.9rem]" />
+                <col className="w-14" />
+                <col className="w-14" />
+              </colgroup>
               <thead className="sticky top-0 z-10 bg-zinc-950">
                 <tr className="text-xs text-zinc-400">
-                  <th className="w-10 px-2 py-2">
+                  <th className="px-2 py-2">
                     <input
                       type="checkbox"
+                      className="h-8 w-8 cursor-pointer accent-emerald-500"
                       checked={allChecked}
                       disabled={contents.length === 0 || loadingContents}
                       onChange={(e) => toggleAll(e.target.checked)}
                       aria-label="전체 선택"
                     />
                   </th>
-                  <th className="w-20 whitespace-nowrap px-2 py-2">상태</th>
-                  <th className="w-24 whitespace-nowrap px-2 py-2">conts_seq</th>
-                  <th className="min-w-[160px] px-2 py-2">사이트</th>
-                  <th className="min-w-[200px] px-2 py-2">제목</th>
-                  <th className="w-28 whitespace-nowrap px-2 py-2">작성일</th>
-                  <th className="w-16 whitespace-nowrap px-2 py-2">댓글</th>
-                  <th className="w-16 whitespace-nowrap px-2 py-2">조회</th>
+                  <th className="whitespace-nowrap px-2 py-2">conts_seq</th>
+                  <th className="px-2 py-2">사이트</th>
+                  <th className="min-w-0 px-2 py-2">제목</th>
+                  <th className="whitespace-nowrap px-2 py-2">작성일</th>
+                  <th className="whitespace-nowrap px-2 py-2">댓글</th>
+                  <th className="whitespace-nowrap px-2 py-2">조회</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingContents ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-6 text-center text-sm text-zinc-500">
+                    <td colSpan={7} className="px-3 py-6 text-center text-sm text-zinc-500">
                       불러오는 중…
                     </td>
                   </tr>
                 ) : contents.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-6 text-center text-sm text-zinc-500">
+                    <td colSpan={7} className="px-3 py-6 text-center text-sm text-zinc-500">
                       {selectedPjSeq ? "문서가 없습니다." : "우측에서 프로그램·매체를 선택하세요."}
                     </td>
                   </tr>
@@ -510,6 +503,7 @@ export default function FilteringAdminPage() {
                         <td className="px-2 py-2 align-top">
                           <input
                             type="checkbox"
+                            className="h-8 w-8 cursor-pointer accent-emerald-500"
                             checked={!!selectedConts[c.conts_seq]}
                             onChange={(e) =>
                               setSelectedConts((prev) => ({
@@ -520,27 +514,27 @@ export default function FilteringAdminPage() {
                             aria-label={`선택 ${c.conts_seq}`}
                           />
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2 align-top text-xs text-zinc-300">
-                          {statusLabel(c.conts_status)}
-                        </td>
                         <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
                           {c.conts_seq}
                         </td>
-                        <td className="px-2 py-2 align-top text-xs text-zinc-300">
-                          <div className="break-words" title={c.site_name ?? c.site_id ?? undefined}>
+                        <td className="max-w-[7rem] px-2 py-2 align-top text-xs text-zinc-300">
+                          <div
+                            className="truncate"
+                            title={c.site_name ?? c.site_id ?? undefined}
+                          >
                             {c.site_name ?? c.site_id ?? "—"}
                           </div>
                         </td>
-                        <td className="px-2 py-2 align-top text-zinc-100">
+                        <td className="min-w-0 px-2 py-2 align-top text-zinc-100">
                           <button
                             type="button"
                             onClick={() => void onToggleTitle(c.conts_seq)}
-                            className="w-full text-left underline-offset-2 hover:underline"
+                            className="w-full min-w-0 text-left underline-offset-2 hover:underline"
                           >
                             <span className="line-clamp-2 break-words">{c.title ?? "—"}</span>
                           </button>
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
+                        <td className="whitespace-nowrap px-1.5 py-2 align-top font-mono text-xs text-zinc-400">
                           {formatTs(c.wdate)}
                         </td>
                         <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
@@ -552,7 +546,7 @@ export default function FilteringAdminPage() {
                       </tr>
                       {openDetailSeq === c.conts_seq ? (
                         <tr className="border-t border-white/5 bg-zinc-900/90">
-                          <td colSpan={8} className="px-3 py-3">
+                          <td colSpan={7} className="px-3 py-3">
                             {loadingDetailSeq === c.conts_seq ? (
                               <p className="text-sm text-zinc-500">상세 불러오는 중…</p>
                             ) : detailBySeq[c.conts_seq] ? (
