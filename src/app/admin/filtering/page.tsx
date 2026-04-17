@@ -47,19 +47,15 @@ type DetailItem = {
   pjname: string;
 };
 
-function formatTs(iso: string | null) {
+/** 로컬 기준 yyyy-mm-dd (목록 작성일) */
+function formatDateYmd(iso: string | null) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function formatDateOnly(iso: string | null) {
@@ -405,7 +401,7 @@ export default function FilteringAdminPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.85fr)]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
         <div className="order-2 min-h-[420px] rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 xl:order-1">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold text-zinc-100">수집문서 (좌)</div>
@@ -457,7 +453,7 @@ export default function FilteringAdminPage() {
               <colgroup>
                 <col className="w-14" />
                 <col className="w-24" />
-                <col className="w-[7rem]" />
+                <col className="w-[4.9rem]" />
                 <col className="w-[45%]" />
                 <col className="w-[4.9rem]" />
                 <col className="w-14" />
@@ -517,7 +513,7 @@ export default function FilteringAdminPage() {
                         <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
                           {c.conts_seq}
                         </td>
-                        <td className="max-w-[7rem] px-2 py-2 align-top text-xs text-zinc-300">
+                        <td className="max-w-[4.9rem] px-2 py-2 align-top text-xs text-zinc-300">
                           <div
                             className="truncate"
                             title={c.site_name ?? c.site_id ?? undefined}
@@ -535,7 +531,7 @@ export default function FilteringAdminPage() {
                           </button>
                         </td>
                         <td className="whitespace-nowrap px-1.5 py-2 align-top font-mono text-xs text-zinc-400">
-                          {formatTs(c.wdate)}
+                          {formatDateYmd(c.wdate)}
                         </td>
                         <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
                           {c.rp_count ?? "—"}
