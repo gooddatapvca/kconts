@@ -6,7 +6,7 @@ type Platform = "all" | "tv_ott" | "web_show";
 type Drama = "all" | "drama" | "non_drama";
 
 /**
- * raw_contents.conts_status = 1 인 건만 project 와 INNER JOIN 후 프로그램별 건수,
+ * raw_contents에서 conts_status=1만 먼저 pj_seq별 집계한 뒤 project(및 pclass)와 조인,
  * 건수 많은 순 정렬.
  */
 export async function GET(req: Request) {
@@ -43,16 +43,20 @@ export async function GET(req: Request) {
           SELECT
             p.pj_seq,
             p.pjname,
-            COUNT(rc.conts_seq)::bigint AS doc_count
-          FROM project p
-          INNER JOIN raw_contents rc
-            ON rc.pj_seq::bigint = p.pj_seq
-            AND rc.conts_status = 1
-          WHERE COALESCE(p.project_status, 1) = 1
+            rc.doc_count
+          FROM (
+            SELECT
+              rc.pj_seq::bigint AS pj_seq,
+              COUNT(*)::bigint AS doc_count
+            FROM raw_contents rc
+            WHERE rc.conts_status = 1
+            GROUP BY rc.pj_seq::bigint
+          ) rc
+          JOIN project p ON p.pj_seq = rc.pj_seq
+          WHERE (p.project_status = 1 OR p.project_status IS NULL)
             ${dramaSql}
             ${weekdaySql}
-          GROUP BY p.pj_seq, p.pjname
-          ORDER BY doc_count DESC, p.pj_seq DESC
+          ORDER BY rc.doc_count DESC, p.pj_seq DESC
           LIMIT 500
         `)
       : platform === "tv_ott"
@@ -66,19 +70,22 @@ export async function GET(req: Request) {
             SELECT
               p.pj_seq,
               p.pjname,
-              COUNT(rc.conts_seq)::bigint AS doc_count
-            FROM project p
-            INNER JOIN pclass pc
-              ON pc.class_id = p.class_id
-              AND pc.par_class_id IN ('cl001', 'cl002', 'cl003', 'cl900')
-            INNER JOIN raw_contents rc
-              ON rc.pj_seq::bigint = p.pj_seq
-              AND rc.conts_status = 1
-            WHERE COALESCE(p.project_status, 1) = 1
+              rc.doc_count
+            FROM (
+              SELECT
+                rc.pj_seq::bigint AS pj_seq,
+                COUNT(*)::bigint AS doc_count
+              FROM raw_contents rc
+              WHERE rc.conts_status = 1
+              GROUP BY rc.pj_seq::bigint
+            ) rc
+            JOIN project p ON p.pj_seq = rc.pj_seq
+            JOIN pclass pc ON pc.class_id = p.class_id
+            WHERE pc.par_class_id IN ('cl001', 'cl002', 'cl003', 'cl900')
+              AND (p.project_status = 1 OR p.project_status IS NULL)
               ${dramaSql}
               ${weekdaySql}
-            GROUP BY p.pj_seq, p.pjname
-            ORDER BY doc_count DESC, p.pj_seq DESC
+            ORDER BY rc.doc_count DESC, p.pj_seq DESC
             LIMIT 500
           `)
         : await prisma.$queryRaw<
@@ -91,19 +98,22 @@ export async function GET(req: Request) {
             SELECT
               p.pj_seq,
               p.pjname,
-              COUNT(rc.conts_seq)::bigint AS doc_count
-            FROM project p
-            INNER JOIN pclass pc
-              ON pc.class_id = p.class_id
-              AND pc.par_class_id = 'cl901'
-            INNER JOIN raw_contents rc
-              ON rc.pj_seq::bigint = p.pj_seq
-              AND rc.conts_status = 1
-            WHERE COALESCE(p.project_status, 1) = 1
+              rc.doc_count
+            FROM (
+              SELECT
+                rc.pj_seq::bigint AS pj_seq,
+                COUNT(*)::bigint AS doc_count
+              FROM raw_contents rc
+              WHERE rc.conts_status = 1
+              GROUP BY rc.pj_seq::bigint
+            ) rc
+            JOIN project p ON p.pj_seq = rc.pj_seq
+            JOIN pclass pc ON pc.class_id = p.class_id
+            WHERE pc.par_class_id = 'cl901'
+              AND (p.project_status = 1 OR p.project_status IS NULL)
               ${dramaSql}
               ${weekdaySql}
-            GROUP BY p.pj_seq, p.pjname
-            ORDER BY doc_count DESC, p.pj_seq DESC
+            ORDER BY rc.doc_count DESC, p.pj_seq DESC
             LIMIT 500
           `);
 
