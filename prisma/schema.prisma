@@ -83,3 +83,36 @@ model Topictype {
 
   @@map("topictype")
 }
+
+/// 수집 문서 (필터링 대상) — conts_status: 0 삭제, 1 서비스, 3 자동삭제, 9 수집중
+model RawContents {
+  conts_seq    Int       @id @default(autoincrement())
+  pj_seq       Int
+  site_id      String?   @db.Char(8)
+  title        String?   @db.VarChar(2000)
+  body         String?
+  writer       String?   @db.VarChar(200)
+  wdate        DateTime? @db.Timestamp(6)
+  cwdate       DateTime? @db.Timestamp(6)
+  conts_status Int?      @default(1) @db.SmallInt
+  rp_count     Int?      @default(0)
+  origin       String?   @db.VarChar(100)
+  v_count      Int?      @default(0)
+  origin_link  String?   @db.VarChar(1000)
+  week_cd      String?   @db.VarChar(10)
+
+  @@index([pj_seq], map: "idx_raw_contents_pj_seq")
+  @@map("raw_contents")
+}
+
+/// 수집 대상 사이트
+model Site {
+  site_id     String    @id @db.Char(8)
+  chan_id     String    @db.Char(5)
+  site_status Int?
+  moddate     DateTime? @db.Timestamp(6)
+  site_name   String?   @db.VarChar(100)
+  gravity     Float?
+
+  @@map("site")
+}

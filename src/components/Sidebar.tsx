@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { href: "/admin/multi-weekday", label: "프로그램 다중 요일", desc: "project.service_day" },
   { href: "/admin/dcgallery", label: "DC갤러리-프로그램", desc: "dcgallery" },
   { href: "/admin/deleted-topics", label: "삭제토픽 관리", desc: "topic · 미사용 복구" },
+  { href: "/admin/filtering", label: "필터링 관리", desc: "raw_contents · 삭제/복구" },
 ];
 
 export function Sidebar() {
