@@ -116,3 +116,13 @@ model Site {
 
   @@map("site")
 }
+
+/// 채널 (site.chan_id) — 필터링 화면에서 뉴스/VON/VD/SNS 구분에 사용
+model Channel {
+  chan_id     String    @id @db.Char(5)
+  chan_name   String?   @db.VarChar(100)
+  moddate     DateTime? @db.Timestamp(6)
+  chan_status Int?
+
+  @@map("channel")
+}

@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { useToast } from "@/components/Toaster";
 import { fetchJson } from "@/lib/fetchJson";
 import { errorMessage } from "@/lib/errors";
 import { WEEKDAYS } from "@/lib/parsers";
+import type { ChannelBucket } from "@/lib/filteringChannelBucket";
 
-type ProgramRow = { pj_seq: string; pjname: string; doc_count: number };
+const PAGE_SIZE = 20;
+
+type ProgramRow = { rank: number; pj_seq: string; pjname: string; doc_count: number };
 
 type ContentRow = {
   conts_seq: number;
@@ -22,6 +25,26 @@ type ContentRow = {
   rp_count: number | null;
   v_count: number | null;
   origin_link: string | null;
+};
+
+type ChannelAgg = { total: number; news: number; von: number; vd: number; sns: number };
+
+type DetailItem = {
+  conts_seq: number;
+  pj_seq: number;
+  site_id: string | null;
+  site_name: string | null;
+  title: string | null;
+  body: string | null;
+  writer: string | null;
+  wdate: string | null;
+  cwdate: string | null;
+  conts_status: number | null;
+  rp_count: number | null;
+  v_count: number | null;
+  origin_link: string | null;
+  origin: string | null;
+  pjname: string;
 };
 
 function statusLabel(s: number | null | undefined): string {
@@ -55,6 +78,67 @@ function formatTs(iso: string | null) {
   });
 }
 
+function formatDateOnly(iso: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function bucketLabel(b: ChannelBucket | "all"): string {
+  switch (b) {
+    case "news":
+      return "뉴스";
+    case "von":
+      return "VON";
+    case "vd":
+      return "VD";
+    case "sns":
+      return "SNS";
+    default:
+      return "전체";
+  }
+}
+
+function PaginationBar(props: {
+  page: number;
+  totalPages: number;
+  total: number;
+  disabled: boolean;
+  onPageChange: (p: number) => void;
+}) {
+  const { page, totalPages, total, disabled, onPageChange } = props;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
+      <span>
+        총 {total.toLocaleString("ko-KR")}건 · {page}/{totalPages}페이지
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={disabled || page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          className="rounded border border-zinc-600 px-2 py-1 text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+        >
+          이전
+        </button>
+        <button
+          type="button"
+          disabled={disabled || page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          className="rounded border border-zinc-600 px-2 py-1 text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+        >
+          다음
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function FilteringAdminPage() {
   const toast = useToast();
   const [platform, setPlatform] = useState<"all" | "tv_ott" | "web_show">("all");
@@ -64,11 +148,23 @@ export default function FilteringAdminPage() {
   const [programs, setPrograms] = useState<ProgramRow[]>([]);
   const [loadingPrograms, setLoadingPrograms] = useState(false);
   const [selectedPjSeq, setSelectedPjSeq] = useState<string | null>(null);
+  const [selectedBucket, setSelectedBucket] = useState<ChannelBucket | "all">("all");
+  const [contentsPage, setContentsPage] = useState(1);
+
+  const [expandedPjSeq, setExpandedPjSeq] = useState<string | null>(null);
+  const [channelAgg, setChannelAgg] = useState<ChannelAgg | null>(null);
+  const [loadingChannels, setLoadingChannels] = useState(false);
 
   const [contents, setContents] = useState<ContentRow[]>([]);
+  const [contentsTotal, setContentsTotal] = useState(0);
+  const [contentsTotalPages, setContentsTotalPages] = useState(1);
   const [loadingContents, setLoadingContents] = useState(false);
   const [selectedConts, setSelectedConts] = useState<Record<number, boolean>>({});
   const [patching, setPatching] = useState(false);
+
+  const [openDetailSeq, setOpenDetailSeq] = useState<number | null>(null);
+  const [detailBySeq, setDetailBySeq] = useState<Record<number, DetailItem>>({});
+  const [loadingDetailSeq, setLoadingDetailSeq] = useState<number | null>(null);
 
   const programsQuery = useMemo(() => {
     const p = new URLSearchParams();
@@ -89,8 +185,15 @@ export default function FilteringAdminPage() {
         setPrograms(json.items ?? []);
         if (opts?.resetSelection) {
           setSelectedPjSeq(null);
+          setSelectedBucket("all");
+          setContentsPage(1);
           setContents([]);
+          setContentsTotal(0);
+          setContentsTotalPages(1);
           setSelectedConts({});
+          setExpandedPjSeq(null);
+          setChannelAgg(null);
+          setOpenDetailSeq(null);
         }
       } catch (e) {
         toast.error("목록 실패", errorMessage(e, "프로그램 집계를 불러오지 못했습니다."));
@@ -101,28 +204,103 @@ export default function FilteringAdminPage() {
     [programsQuery, toast]
   );
 
+  const fetchChannelAgg = useCallback(async (pjSeq: string) => {
+    setLoadingChannels(true);
+    try {
+      const json = await fetchJson<ChannelAgg & { ok: boolean }>(
+        `/api/filtering/channels?pj_seq=${encodeURIComponent(pjSeq)}`,
+        { cache: "no-store" }
+      );
+      setChannelAgg({
+        total: json.total,
+        news: json.news,
+        von: json.von,
+        vd: json.vd,
+        sns: json.sns,
+      });
+    } catch (e) {
+      toast.error("채널 집계 실패", errorMessage(e, "채널 집계를 불러오지 못했습니다."));
+      setChannelAgg(null);
+    }
+    setLoadingChannels(false);
+  }, [toast]);
+
   const loadContents = useCallback(
-    async (pjSeq: string) => {
+    async (pjSeq: string, bucket: ChannelBucket | "all", page: number) => {
+      setSelectedPjSeq(pjSeq);
+      setSelectedBucket(bucket);
+      setContentsPage(page);
       setLoadingContents(true);
       setSelectedConts({});
+      setOpenDetailSeq(null);
+      const q = new URLSearchParams({
+        pj_seq: pjSeq,
+        page: String(page),
+        pageSize: String(PAGE_SIZE),
+      });
+      if (bucket !== "all") q.set("bucket", bucket);
       try {
-        const json = await fetchJson<{ ok: boolean; items: ContentRow[] }>(
-          `/api/filtering/contents?pj_seq=${encodeURIComponent(pjSeq)}`,
-          { cache: "no-store" }
-        );
+        const json = await fetchJson<{
+          ok: boolean;
+          items: ContentRow[];
+          total: number;
+          totalPages: number;
+          page: number;
+        }>(`/api/filtering/contents?${q.toString()}`, { cache: "no-store" });
         setContents(json.items ?? []);
+        setContentsTotal(json.total ?? 0);
+        setContentsTotalPages(Math.max(1, json.totalPages ?? 1));
       } catch (e) {
         toast.error("문서 목록 실패", errorMessage(e, "수집문서를 불러오지 못했습니다."));
         setContents([]);
+        setContentsTotal(0);
+        setContentsTotalPages(1);
       }
       setLoadingContents(false);
     },
     [toast]
   );
 
-  function onSelectProgram(r: ProgramRow) {
-    setSelectedPjSeq(r.pj_seq);
-    void loadContents(r.pj_seq);
+  function onToggleProgramName(pjSeq: string) {
+    if (expandedPjSeq === pjSeq) {
+      setExpandedPjSeq(null);
+      setChannelAgg(null);
+      return;
+    }
+    setExpandedPjSeq(pjSeq);
+    setChannelAgg(null);
+    void fetchChannelAgg(pjSeq);
+  }
+
+  function onClickMainCount(r: ProgramRow) {
+    setExpandedPjSeq(null);
+    setChannelAgg(null);
+    void loadContents(r.pj_seq, "all", 1);
+  }
+
+  function onClickBucketCount(pjSeq: string, b: ChannelBucket | "all") {
+    void loadContents(pjSeq, b, 1);
+  }
+
+  async function onToggleTitle(contsSeq: number) {
+    if (openDetailSeq === contsSeq) {
+      setOpenDetailSeq(null);
+      return;
+    }
+    setOpenDetailSeq(contsSeq);
+    if (detailBySeq[contsSeq]) return;
+    setLoadingDetailSeq(contsSeq);
+    try {
+      const json = await fetchJson<{ ok: boolean; item: DetailItem }>(
+        `/api/filtering/contents/detail?conts_seq=${encodeURIComponent(String(contsSeq))}`,
+        { cache: "no-store" }
+      );
+      setDetailBySeq((prev) => ({ ...prev, [contsSeq]: json.item }));
+    } catch (e) {
+      toast.error("상세 불러오기 실패", errorMessage(e, "상세를 불러오지 못했습니다."));
+      setOpenDetailSeq(null);
+    }
+    setLoadingDetailSeq(null);
   }
 
   const selectedIds = useMemo(
@@ -166,7 +344,10 @@ export default function FilteringAdminPage() {
       });
       toast.success(action === "delete" ? "삭제 처리" : "복구 처리", `${selectedIds.length}건`);
       await loadPrograms();
-      if (selectedPjSeq) await loadContents(selectedPjSeq);
+      if (selectedPjSeq) {
+        await loadContents(selectedPjSeq, selectedBucket, contentsPage);
+        if (expandedPjSeq === selectedPjSeq) await fetchChannelAgg(selectedPjSeq);
+      }
     } catch (e) {
       toast.error("처리 실패", errorMessage(e, "처리 실패"));
     }
@@ -175,11 +356,19 @@ export default function FilteringAdminPage() {
 
   const selectedProgram = programs.find((p) => p.pj_seq === selectedPjSeq) ?? null;
 
+  const onPageChange = useCallback(
+    (p: number) => {
+      if (!selectedPjSeq) return;
+      void loadContents(selectedPjSeq, selectedBucket, p);
+    },
+    [loadContents, selectedPjSeq, selectedBucket]
+  );
+
   return (
     <div className="w-full max-w-none">
       <PageHeader
         title="필터링 관리"
-        subtitle="우측: 프로그램별 수집문서 건수(raw_contents.conts_status=1) · 좌측: 선택 프로그램의 문서 목록 · 삭제(0)·복구(9)"
+        subtitle="우측: conts_status=1·project 조인 집계(건수 많은 순) · 프로그램명 클릭 시 채널별 집계 · 수치 클릭 시 좌측 목록 · 좌측 제목 클릭 시 상세"
       />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
@@ -260,10 +449,24 @@ export default function FilteringAdminPage() {
               선택:{" "}
               <span className="font-mono text-zinc-200">{selectedProgram.pj_seq}</span> ·{" "}
               <span className="text-zinc-200">{selectedProgram.pjname}</span>
+              {" · "}
+              <span className="text-emerald-300/90">매체: {bucketLabel(selectedBucket)}</span>
             </p>
           ) : (
-            <p className="mb-2 text-xs text-zinc-500">우측에서 프로그램을 선택하면 목록이 열립니다.</p>
+            <p className="mb-2 text-xs text-zinc-500">
+              우측에서 건수 또는 채널 수치를 누르면 목록이 열립니다.
+            </p>
           )}
+
+          <div className="mb-2">
+            <PaginationBar
+              page={contentsPage}
+              totalPages={contentsTotalPages}
+              total={contentsTotal}
+              disabled={loadingContents || !selectedPjSeq}
+              onPageChange={onPageChange}
+            />
+          </div>
 
           <div className="max-h-[min(62vh,560px)] overflow-x-auto overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50">
             <table className="w-full min-w-[880px] table-auto text-left text-sm text-zinc-100">
@@ -297,115 +500,195 @@ export default function FilteringAdminPage() {
                 ) : contents.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-3 py-6 text-center text-sm text-zinc-500">
-                      {selectedPjSeq ? "문서가 없습니다." : "프로그램을 선택하세요."}
+                      {selectedPjSeq ? "문서가 없습니다." : "우측에서 프로그램·매체를 선택하세요."}
                     </td>
                   </tr>
                 ) : (
                   contents.map((c) => (
-                    <tr
-                      key={c.conts_seq}
-                      className="border-t border-white/10 bg-zinc-950/50 hover:bg-zinc-800/40"
-                    >
-                      <td className="px-2 py-2 align-top">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedConts[c.conts_seq]}
-                          onChange={(e) =>
-                            setSelectedConts((prev) => ({
-                              ...prev,
-                              [c.conts_seq]: e.target.checked,
-                            }))
-                          }
-                          aria-label={`선택 ${c.conts_seq}`}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-top text-xs text-zinc-300">
-                        {statusLabel(c.conts_status)}
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
-                        {c.conts_seq}
-                      </td>
-                      <td className="px-2 py-2 align-top text-xs text-zinc-300">
-                        <div className="break-words" title={c.site_name ?? c.site_id ?? undefined}>
-                          {c.site_name ?? c.site_id ?? "—"}
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 align-top text-zinc-100">
-                        <div className="line-clamp-2 break-words" title={c.title ?? undefined}>
-                          {c.title ?? "—"}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
-                        {formatTs(c.wdate)}
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
-                        {c.rp_count ?? "—"}
-                      </td>
-                      <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
-                        {c.v_count ?? "—"}
-                      </td>
-                    </tr>
+                    <Fragment key={c.conts_seq}>
+                      <tr className="border-t border-white/10 bg-zinc-950/50 hover:bg-zinc-800/40">
+                        <td className="px-2 py-2 align-top">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedConts[c.conts_seq]}
+                            onChange={(e) =>
+                              setSelectedConts((prev) => ({
+                                ...prev,
+                                [c.conts_seq]: e.target.checked,
+                              }))
+                            }
+                            aria-label={`선택 ${c.conts_seq}`}
+                          />
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 align-top text-xs text-zinc-300">
+                          {statusLabel(c.conts_status)}
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
+                          {c.conts_seq}
+                        </td>
+                        <td className="px-2 py-2 align-top text-xs text-zinc-300">
+                          <div className="break-words" title={c.site_name ?? c.site_id ?? undefined}>
+                            {c.site_name ?? c.site_id ?? "—"}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 align-top text-zinc-100">
+                          <button
+                            type="button"
+                            onClick={() => void onToggleTitle(c.conts_seq)}
+                            className="w-full text-left underline-offset-2 hover:underline"
+                          >
+                            <span className="line-clamp-2 break-words">{c.title ?? "—"}</span>
+                          </button>
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
+                          {formatTs(c.wdate)}
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
+                          {c.rp_count ?? "—"}
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-xs text-zinc-400">
+                          {c.v_count ?? "—"}
+                        </td>
+                      </tr>
+                      {openDetailSeq === c.conts_seq ? (
+                        <tr className="border-t border-white/5 bg-zinc-900/90">
+                          <td colSpan={8} className="px-3 py-3">
+                            {loadingDetailSeq === c.conts_seq ? (
+                              <p className="text-sm text-zinc-500">상세 불러오는 중…</p>
+                            ) : detailBySeq[c.conts_seq] ? (
+                              <DetailPanel d={detailBySeq[c.conts_seq]} />
+                            ) : null}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
                   ))
                 )}
               </tbody>
             </table>
           </div>
-          {contents.length > 0 ? (
-            <p className="mt-2 text-xs text-zinc-500">최대 300건까지 표시됩니다.</p>
-          ) : null}
+
+          <div className="mt-2">
+            <PaginationBar
+              page={contentsPage}
+              totalPages={contentsTotalPages}
+              total={contentsTotal}
+              disabled={loadingContents || !selectedPjSeq}
+              onPageChange={onPageChange}
+            />
+          </div>
         </div>
 
         <div className="order-1 min-h-[320px] rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 xl:order-2">
           <div className="mb-2 text-sm font-semibold text-zinc-100">프로그램별 집계 (우)</div>
-          <p className="mb-3 text-xs text-zinc-500">건수는 conts_status=1(서비스) 기준입니다.</p>
+          <p className="mb-3 text-xs text-zinc-500">
+            conts_status=1(서비스)·project 조인 건만 집계 · 건수 많은 순
+          </p>
           <div className="max-h-[min(70vh,640px)] overflow-x-auto overflow-y-auto rounded-lg border border-zinc-800 bg-zinc-950/50">
             <table className="w-full table-auto text-left text-sm text-zinc-100">
               <thead className="sticky top-0 z-10 bg-zinc-950">
                 <tr className="text-xs text-zinc-400">
-                  <th className="px-3 py-2">pj_seq</th>
-                  <th className="min-w-[160px] px-3 py-2">프로그램</th>
-                  <th className="w-24 whitespace-nowrap px-3 py-2 text-right">건수</th>
+                  <th className="w-12 whitespace-nowrap px-2 py-2">순위</th>
+                  <th className="w-20 whitespace-nowrap px-2 py-2">pj_seq</th>
+                  <th className="min-w-[140px] px-2 py-2">프로그램</th>
+                  <th className="w-20 whitespace-nowrap px-2 py-2 text-right">건수</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingPrograms ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-6 text-center text-sm text-zinc-500">
+                    <td colSpan={4} className="px-3 py-6 text-center text-sm text-zinc-500">
                       불러오는 중…
                     </td>
                   </tr>
                 ) : programs.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-6 text-center text-sm text-zinc-500">
+                    <td colSpan={4} className="px-3 py-6 text-center text-sm text-zinc-500">
                       「조회」로 집계를 불러오세요.
                     </td>
                   </tr>
                 ) : (
-                  programs.map((r) => {
-                    const active = selectedPjSeq === r.pj_seq;
-                    return (
+                  programs.map((r) => (
+                    <Fragment key={r.pj_seq}>
                       <tr
-                        key={r.pj_seq}
-                        onClick={() => onSelectProgram(r)}
                         className={[
-                          "cursor-pointer border-t border-white/10",
-                          active ? "bg-indigo-950/50 hover:bg-indigo-900/40" : "bg-zinc-950/50 hover:bg-zinc-800/40",
+                          "border-t border-white/10",
+                          selectedPjSeq === r.pj_seq
+                            ? "bg-indigo-950/40"
+                            : "bg-zinc-950/50 hover:bg-zinc-800/30",
                         ].join(" ")}
                       >
-                        <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-zinc-300">
+                        <td className="whitespace-nowrap px-2 py-2 font-mono text-xs text-zinc-400">
+                          {r.rank}
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 font-mono text-xs text-zinc-300">
                           {r.pj_seq}
                         </td>
-                        <td className="px-3 py-2 align-top">
-                          <div className="break-words text-zinc-100" title={r.pjname}>
+                        <td className="px-2 py-2 align-top">
+                          <button
+                            type="button"
+                            onClick={() => onToggleProgramName(r.pj_seq)}
+                            className={[
+                              "w-full text-left break-words hover:underline",
+                              expandedPjSeq === r.pj_seq ? "text-indigo-300" : "text-zinc-100",
+                            ].join(" ")}
+                            title={r.pjname}
+                          >
                             {r.pjname}
-                          </div>
+                          </button>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2 text-right font-mono text-sm text-emerald-300/90">
-                          {r.doc_count}
+                        <td className="whitespace-nowrap px-2 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => onClickMainCount(r)}
+                            className="font-mono text-sm text-emerald-300/90 hover:underline"
+                          >
+                            {r.doc_count}
+                          </button>
                         </td>
                       </tr>
-                    );
-                  })
+                      {expandedPjSeq === r.pj_seq ? (
+                        <tr className="border-t border-indigo-900/40 bg-indigo-950/20">
+                          <td colSpan={4} className="px-3 py-3">
+                            {loadingChannels ? (
+                              <p className="text-xs text-zinc-500">채널 집계 불러오는 중…</p>
+                            ) : channelAgg ? (
+                              <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+                                <ChannelCell
+                                  label="뉴스"
+                                  value={channelAgg.news}
+                                  onClick={() => onClickBucketCount(r.pj_seq, "news")}
+                                />
+                                <ChannelCell
+                                  label="VON"
+                                  value={channelAgg.von}
+                                  onClick={() => onClickBucketCount(r.pj_seq, "von")}
+                                />
+                                <ChannelCell
+                                  label="VD"
+                                  value={channelAgg.vd}
+                                  onClick={() => onClickBucketCount(r.pj_seq, "vd")}
+                                />
+                                <ChannelCell
+                                  label="SNS"
+                                  value={channelAgg.sns}
+                                  onClick={() => onClickBucketCount(r.pj_seq, "sns")}
+                                />
+                                <ChannelCell
+                                  label="전체"
+                                  value={channelAgg.total}
+                                  accent
+                                  onClick={() => onClickBucketCount(r.pj_seq, "all")}
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-xs text-zinc-500">집계 없음</p>
+                            )}
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  ))
                 )}
               </tbody>
             </table>
@@ -415,6 +698,85 @@ export default function FilteringAdminPage() {
           ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChannelCell(props: {
+  label: string;
+  value: number;
+  accent?: boolean;
+  onClick: () => void;
+}) {
+  const { label, value, accent, onClick } = props;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex flex-col items-center gap-0.5 rounded-md border border-zinc-700/80 bg-zinc-900/80 px-3 py-1.5 text-left transition hover:border-emerald-500/50 hover:bg-zinc-800"
+    >
+      <span className="text-[10px] text-zinc-500">{label}</span>
+      <span
+        className={[
+          "font-mono text-sm tabular-nums",
+          accent ? "text-emerald-300" : "text-zinc-100",
+        ].join(" ")}
+      >
+        {value.toLocaleString("ko-KR")}
+      </span>
+    </button>
+  );
+}
+
+function DetailPanel({ d }: { d: DetailItem }) {
+  const statLine = `조회수 ${d.v_count ?? 0} 댓글수 ${d.rp_count ?? 0}`;
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950/80 p-3 text-sm text-zinc-200">
+      <div className="mb-3 grid grid-cols-1 gap-2 border-b border-zinc-800 pb-3 sm:grid-cols-[auto_1fr_auto_auto] sm:items-start sm:gap-x-3">
+        <div className="font-medium text-zinc-100">{d.site_name ?? d.site_id ?? "—"}</div>
+        <div className="font-mono text-xs text-zinc-400">{d.conts_seq}</div>
+        <div className="sm:col-span-2 sm:col-start-2">
+          <div className="text-zinc-50">{d.title ?? "—"}</div>
+          <div className="mt-1 text-xs text-zinc-500">{statLine}</div>
+        </div>
+        <div className="text-xs text-zinc-500">작성일</div>
+        <div className="text-xs text-zinc-300">{formatDateOnly(d.wdate)}</div>
+      </div>
+      <dl className="grid grid-cols-1 gap-0 sm:grid-cols-[100px_1fr]">
+        <dt className="border border-zinc-800 bg-zinc-800/60 px-2 py-1.5 text-xs text-zinc-400">
+          프로그램
+        </dt>
+        <dd className="border border-zinc-800 border-l-0 px-2 py-1.5 text-xs">{d.pjname}</dd>
+        <dt className="border border-zinc-800 border-t-0 bg-zinc-800/60 px-2 py-1.5 text-xs text-zinc-400">
+          게시자
+        </dt>
+        <dd className="border border-zinc-800 border-l-0 border-t-0 px-2 py-1.5 text-xs">
+          {d.writer ?? "—"}
+        </dd>
+        <dt className="border border-zinc-800 border-t-0 bg-zinc-800/60 px-2 py-1.5 text-xs text-zinc-400">
+          원문
+        </dt>
+        <dd className="border border-zinc-800 border-l-0 border-t-0 px-2 py-1.5 text-xs break-all">
+          {d.origin_link ? (
+            <a
+              href={d.origin_link}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sky-400 underline hover:text-sky-300"
+            >
+              {d.origin_link}
+            </a>
+          ) : (
+            "—"
+          )}
+        </dd>
+        <dt className="border border-zinc-800 border-t-0 bg-zinc-800/60 px-2 py-1.5 text-xs text-zinc-400 align-top">
+          내용
+        </dt>
+        <dd className="border border-zinc-800 border-l-0 border-t-0 px-2 py-1.5 text-xs whitespace-pre-wrap break-words">
+          {d.body ?? "—"}
+        </dd>
+      </dl>
     </div>
   );
 }

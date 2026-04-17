@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { channelBucketCase, parseBucket } from "@/lib/filteringChannelBucket";
 
 function parsePjSeqInt(raw: string | null): number | null {
   if (raw == null || raw.trim() === "") return null;
@@ -12,15 +13,41 @@ function parsePjSeqInt(raw: string | null): number | null {
 }
 
 /**
- * 선택한 프로그램의 수집문서 목록(좌측 패널)
+ * 선택 프로그램의 수집문서 — conts_status=1, project INNER JOIN, 채널 버킷·페이징
  */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const pjSeq = parsePjSeqInt(url.searchParams.get("pj_seq"));
+  const bucket = parseBucket(url.searchParams.get("bucket"));
+  const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
+  const pageSizeRaw = Number.parseInt(url.searchParams.get("pageSize") ?? "20", 10) || 20;
+  const pageSize = Math.min(100, Math.max(5, pageSizeRaw));
+  const offset = (page - 1) * pageSize;
 
   if (pjSeq == null) {
     return NextResponse.json({ ok: false, error: "pj_seq가 필요합니다." }, { status: 400 });
   }
+
+  const bucketWhere =
+    bucket === "all"
+      ? Prisma.empty
+      : Prisma.sql`AND (${channelBucketCase}) = ${bucket}`;
+
+  const countRows = await prisma.$queryRaw<Array<{ c: bigint | number | string }>>(
+    Prisma.sql`
+      SELECT COUNT(*)::bigint AS c
+      FROM raw_contents rc
+      INNER JOIN project p ON p.pj_seq = rc.pj_seq::bigint
+      LEFT JOIN site s ON s.site_id = rc.site_id
+      LEFT JOIN channel ch ON ch.chan_id = s.chan_id
+      WHERE rc.pj_seq = ${pjSeq}
+        AND rc.conts_status = 1
+        ${bucketWhere}
+    `
+  );
+
+  const total = Number(countRows[0]?.c ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const rows = await prisma.$queryRaw<
     Array<{
@@ -53,10 +80,15 @@ export async function GET(req: Request) {
         rc.v_count,
         rc.origin_link
       FROM raw_contents rc
+      INNER JOIN project p ON p.pj_seq = rc.pj_seq::bigint
       LEFT JOIN site s ON s.site_id = rc.site_id
+      LEFT JOIN channel ch ON ch.chan_id = s.chan_id
       WHERE rc.pj_seq = ${pjSeq}
+        AND rc.conts_status = 1
+        ${bucketWhere}
       ORDER BY rc.conts_seq DESC
-      LIMIT 300
+      LIMIT ${pageSize}
+      OFFSET ${offset}
     `
   );
 
@@ -65,6 +97,11 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    bucket,
+    page,
+    pageSize,
+    total,
+    totalPages,
     items: rows.map((r) => ({
       conts_seq: r.conts_seq,
       pj_seq: r.pj_seq,
