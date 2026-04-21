@@ -12,6 +12,19 @@ function parsePjSeqInt(raw: string | null): number | null {
   return n;
 }
 
+type SearchField = "title" | "body" | "title_body";
+type MatchMode = "like" | "not";
+
+function parseSearchField(raw: string | null): SearchField {
+  if (raw === "title" || raw === "body" || raw === "title_body") return raw;
+  return "title_body";
+}
+
+function parseMatchMode(raw: string | null): MatchMode {
+  if (raw === "not") return "not";
+  return "like";
+}
+
 /**
  * 선택 프로그램의 수집문서 — conts_status=1, project INNER JOIN, 채널 버킷·페이징
  */
@@ -19,6 +32,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const pjSeq = parsePjSeqInt(url.searchParams.get("pj_seq"));
   const bucket = parseBucket(url.searchParams.get("bucket"));
+  const q = (url.searchParams.get("q") ?? "").trim();
+  const searchField = parseSearchField(url.searchParams.get("searchField"));
+  const matchMode = parseMatchMode(url.searchParams.get("matchMode"));
   const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const pageSizeRaw = Number.parseInt(url.searchParams.get("pageSize") ?? "20", 10) || 20;
   const pageSize = Math.min(100, Math.max(5, pageSizeRaw));
@@ -33,6 +49,20 @@ export async function GET(req: Request) {
       ? Prisma.empty
       : Prisma.sql`AND (${channelBucketCase}) = ${bucket}`;
 
+  const qPattern = `%${q}%`;
+  const searchTargetExpr =
+    searchField === "title"
+      ? Prisma.sql`COALESCE(rc.title, '')`
+      : searchField === "body"
+        ? Prisma.sql`COALESCE(rc.body, '')`
+        : Prisma.sql`(COALESCE(rc.title, '') || ' ' || COALESCE(rc.body, ''))`;
+  const searchWhere =
+    q === ""
+      ? Prisma.empty
+      : matchMode === "not"
+        ? Prisma.sql`AND NOT (${searchTargetExpr} ILIKE ${qPattern})`
+        : Prisma.sql`AND ${searchTargetExpr} ILIKE ${qPattern}`;
+
   const countRows = await prisma.$queryRaw<Array<{ c: bigint | number | string }>>(
     Prisma.sql`
       SELECT COUNT(*)::bigint AS c
@@ -43,6 +73,7 @@ export async function GET(req: Request) {
       WHERE rc.pj_seq = ${pjSeq}
         AND rc.conts_status = 1
         ${bucketWhere}
+        ${searchWhere}
     `
   );
 
@@ -86,6 +117,7 @@ export async function GET(req: Request) {
       WHERE rc.pj_seq = ${pjSeq}
         AND rc.conts_status = 1
         ${bucketWhere}
+        ${searchWhere}
       ORDER BY rc.conts_seq DESC
       LIMIT ${pageSize}
       OFFSET ${offset}
@@ -98,6 +130,9 @@ export async function GET(req: Request) {
   return NextResponse.json({
     ok: true,
     bucket,
+    q,
+    searchField,
+    matchMode,
     page,
     pageSize,
     total,

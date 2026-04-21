@@ -28,6 +28,8 @@ type ContentRow = {
 };
 
 type ChannelAgg = { total: number; news: number; von: number; vd: number; sns: number };
+type SearchField = "title" | "body" | "title_body";
+type MatchMode = "like" | "not";
 
 type DetailItem = {
   conts_seq: number;
@@ -130,6 +132,9 @@ export default function FilteringAdminPage() {
   const [selectedPjSeq, setSelectedPjSeq] = useState<string | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<ChannelBucket | "all">("all");
   const [contentsPage, setContentsPage] = useState(1);
+  const [searchField, setSearchField] = useState<SearchField>("title_body");
+  const [matchMode, setMatchMode] = useState<MatchMode>("like");
+  const [keyword, setKeyword] = useState("");
 
   const [expandedPjSeq, setExpandedPjSeq] = useState<string | null>(null);
   const [channelAgg, setChannelAgg] = useState<ChannelAgg | null>(null);
@@ -219,6 +224,12 @@ export default function FilteringAdminPage() {
         pageSize: String(PAGE_SIZE),
       });
       if (bucket !== "all") q.set("bucket", bucket);
+      const trimmedKeyword = keyword.trim();
+      if (trimmedKeyword !== "") {
+        q.set("q", trimmedKeyword);
+        q.set("searchField", searchField);
+        q.set("matchMode", matchMode);
+      }
       try {
         const json = await fetchJson<{
           ok: boolean;
@@ -238,7 +249,7 @@ export default function FilteringAdminPage() {
       }
       setLoadingContents(false);
     },
-    [toast]
+    [keyword, matchMode, searchField, toast]
   );
 
   function onToggleProgramName(pjSeq: string) {
@@ -344,6 +355,14 @@ export default function FilteringAdminPage() {
     [loadContents, selectedPjSeq, selectedBucket]
   );
 
+  const onSearchContents = useCallback(() => {
+    if (!selectedPjSeq) {
+      toast.error("선택 필요", "우측에서 프로그램·매체를 먼저 선택하세요.");
+      return;
+    }
+    void loadContents(selectedPjSeq, selectedBucket, 1);
+  }, [loadContents, selectedBucket, selectedPjSeq, toast]);
+
   return (
     <div className="w-full max-w-none">
       <PageHeader
@@ -437,6 +456,52 @@ export default function FilteringAdminPage() {
               우측에서 건수 또는 채널 수치를 누르면 목록이 열립니다.
             </p>
           )}
+
+          <div className="mb-2 flex flex-wrap items-end gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400">검색대상</label>
+              <select
+                value={searchField}
+                onChange={(e) => setSearchField(e.target.value as SearchField)}
+                className="mt-1 min-w-[120px] rounded-md border border-zinc-700 bg-zinc-950/70 px-2.5 py-1.5 text-xs text-zinc-50 outline-none focus:border-emerald-400/70"
+              >
+                <option value="title">제목</option>
+                <option value="body">본문</option>
+                <option value="title_body">제목+본문</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400">Like</label>
+              <select
+                value={matchMode}
+                onChange={(e) => setMatchMode(e.target.value as MatchMode)}
+                className="mt-1 min-w-[88px] rounded-md border border-zinc-700 bg-zinc-950/70 px-2.5 py-1.5 text-xs text-zinc-50 outline-none focus:border-emerald-400/70"
+              >
+                <option value="like">Like</option>
+                <option value="not">Not</option>
+              </select>
+            </div>
+            <div className="min-w-[220px] flex-1">
+              <label className="block text-[11px] font-medium text-zinc-400">검색어</label>
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") onSearchContents();
+                }}
+                placeholder="키워드를 입력하세요"
+                className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950/70 px-3 py-1.5 text-xs text-zinc-50 outline-none placeholder:text-zinc-500 focus:border-emerald-400/70"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={onSearchContents}
+              disabled={loadingContents || !selectedPjSeq}
+              className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:bg-zinc-800/80 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              검색
+            </button>
+          </div>
 
           <div className="mb-2">
             <PaginationBar
