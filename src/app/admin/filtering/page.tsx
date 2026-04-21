@@ -8,8 +8,6 @@ import { errorMessage } from "@/lib/errors";
 import { WEEKDAYS } from "@/lib/parsers";
 import type { ChannelBucket } from "@/lib/filteringChannelBucket";
 
-const PAGE_SIZE = 20;
-
 type ProgramRow = { rank: number; pj_seq: string; pjname: string; doc_count: number };
 
 type ContentRow = {
@@ -30,6 +28,8 @@ type ContentRow = {
 type ChannelAgg = { total: number; news: number; von: number; vd: number; sns: number };
 type SearchField = "title" | "body" | "title_body";
 type MatchMode = "like" | "not";
+type ContentsStatus = "normal" | "deleted" | "all";
+type SortKey = "rp_desc" | "v_desc" | "wdate_desc" | "wdate_asc";
 
 type DetailItem = {
   conts_seq: number;
@@ -132,6 +132,9 @@ export default function FilteringAdminPage() {
   const [selectedPjSeq, setSelectedPjSeq] = useState<string | null>(null);
   const [selectedBucket, setSelectedBucket] = useState<ChannelBucket | "all">("all");
   const [contentsPage, setContentsPage] = useState(1);
+  const [pageSize, setPageSize] = useState<100 | 200 | 500>(200);
+  const [sort, setSort] = useState<SortKey>("wdate_desc");
+  const [status, setStatus] = useState<ContentsStatus>("normal");
   const [searchField, setSearchField] = useState<SearchField>("title_body");
   const [matchMode, setMatchMode] = useState<MatchMode>("like");
   const [keyword, setKeyword] = useState("");
@@ -221,9 +224,11 @@ export default function FilteringAdminPage() {
       const q = new URLSearchParams({
         pj_seq: pjSeq,
         page: String(page),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
       });
       if (bucket !== "all") q.set("bucket", bucket);
+      q.set("sort", sort);
+      q.set("status", status);
       const trimmedKeyword = keyword.trim();
       if (trimmedKeyword !== "") {
         q.set("q", trimmedKeyword);
@@ -249,7 +254,7 @@ export default function FilteringAdminPage() {
       }
       setLoadingContents(false);
     },
-    [keyword, matchMode, searchField, toast]
+    [keyword, matchMode, pageSize, searchField, sort, status, toast]
   );
 
   function onToggleProgramName(pjSeq: string) {
@@ -458,6 +463,43 @@ export default function FilteringAdminPage() {
           )}
 
           <div className="mb-2 flex flex-wrap items-end gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400">건수</label>
+              <select
+                value={String(pageSize)}
+                onChange={(e) => setPageSize(Number(e.target.value) as 100 | 200 | 500)}
+                className="mt-1 min-w-[90px] rounded-md border border-zinc-700 bg-zinc-950/70 px-2.5 py-1.5 text-xs text-zinc-50 outline-none focus:border-emerald-400/70"
+              >
+                <option value="100">100개</option>
+                <option value="200">200개</option>
+                <option value="500">500개</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400">정렬</label>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortKey)}
+                className="mt-1 min-w-[140px] rounded-md border border-zinc-700 bg-zinc-950/70 px-2.5 py-1.5 text-xs text-zinc-50 outline-none focus:border-emerald-400/70"
+              >
+                <option value="rp_desc">댓글수 많은순</option>
+                <option value="v_desc">조회수 많은순</option>
+                <option value="wdate_desc">날짜 최근순</option>
+                <option value="wdate_asc">날짜 오래된순</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400">상태</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ContentsStatus)}
+                className="mt-1 min-w-[100px] rounded-md border border-zinc-700 bg-zinc-950/70 px-2.5 py-1.5 text-xs text-zinc-50 outline-none focus:border-emerald-400/70"
+              >
+                <option value="normal">정상글</option>
+                <option value="deleted">삭제글</option>
+                <option value="all">전체글</option>
+              </select>
+            </div>
             <div>
               <label className="block text-[11px] font-medium text-zinc-400">검색대상</label>
               <select

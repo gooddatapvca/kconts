@@ -14,6 +14,8 @@ function parsePjSeqInt(raw: string | null): number | null {
 
 type SearchField = "title" | "body" | "title_body";
 type MatchMode = "like" | "not";
+type StatusFilter = "normal" | "deleted" | "all";
+type SortKey = "rp_desc" | "v_desc" | "wdate_desc" | "wdate_asc";
 
 function parseSearchField(raw: string | null): SearchField {
   if (raw === "title" || raw === "body" || raw === "title_body") return raw;
@@ -23,6 +25,19 @@ function parseSearchField(raw: string | null): SearchField {
 function parseMatchMode(raw: string | null): MatchMode {
   if (raw === "not") return "not";
   return "like";
+}
+
+function parseStatusFilter(raw: string | null): StatusFilter {
+  if (raw === "deleted") return "deleted";
+  if (raw === "all") return "all";
+  return "normal";
+}
+
+function parseSortKey(raw: string | null): SortKey {
+  if (raw === "rp_desc" || raw === "v_desc" || raw === "wdate_desc" || raw === "wdate_asc") {
+    return raw;
+  }
+  return "wdate_desc";
 }
 
 /**
@@ -35,9 +50,11 @@ export async function GET(req: Request) {
   const q = (url.searchParams.get("q") ?? "").trim();
   const searchField = parseSearchField(url.searchParams.get("searchField"));
   const matchMode = parseMatchMode(url.searchParams.get("matchMode"));
+  const status = parseStatusFilter(url.searchParams.get("status"));
+  const sort = parseSortKey(url.searchParams.get("sort"));
   const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
   const pageSizeRaw = Number.parseInt(url.searchParams.get("pageSize") ?? "20", 10) || 20;
-  const pageSize = Math.min(100, Math.max(5, pageSizeRaw));
+  const pageSize = Math.min(500, Math.max(5, pageSizeRaw));
   const offset = (page - 1) * pageSize;
 
   if (pjSeq == null) {
@@ -48,6 +65,20 @@ export async function GET(req: Request) {
     bucket === "all"
       ? Prisma.empty
       : Prisma.sql`AND (${channelBucketCase}) = ${bucket}`;
+  const statusWhere =
+    status === "all"
+      ? Prisma.empty
+      : status === "deleted"
+        ? Prisma.sql`AND rc.conts_status = 0`
+        : Prisma.sql`AND rc.conts_status = 1`;
+  const orderBySql =
+    sort === "rp_desc"
+      ? Prisma.sql`COALESCE(rc.rp_count, 0) DESC, rc.conts_seq DESC`
+      : sort === "v_desc"
+        ? Prisma.sql`COALESCE(rc.v_count, 0) DESC, rc.conts_seq DESC`
+        : sort === "wdate_asc"
+          ? Prisma.sql`rc.wdate ASC NULLS LAST, rc.conts_seq DESC`
+          : Prisma.sql`rc.wdate DESC NULLS LAST, rc.conts_seq DESC`;
 
   const qPattern = `%${q}%`;
   const searchTargetExpr =
@@ -71,7 +102,7 @@ export async function GET(req: Request) {
       LEFT JOIN site s ON s.site_id = rc.site_id
       LEFT JOIN channel ch ON ch.chan_id = s.chan_id
       WHERE rc.pj_seq = ${pjSeq}
-        AND rc.conts_status = 1
+        ${statusWhere}
         ${bucketWhere}
         ${searchWhere}
     `
@@ -115,10 +146,10 @@ export async function GET(req: Request) {
       LEFT JOIN site s ON s.site_id = rc.site_id
       LEFT JOIN channel ch ON ch.chan_id = s.chan_id
       WHERE rc.pj_seq = ${pjSeq}
-        AND rc.conts_status = 1
+        ${statusWhere}
         ${bucketWhere}
         ${searchWhere}
-      ORDER BY rc.conts_seq DESC
+      ORDER BY ${orderBySql}
       LIMIT ${pageSize}
       OFFSET ${offset}
     `
@@ -133,6 +164,8 @@ export async function GET(req: Request) {
     q,
     searchField,
     matchMode,
+    status,
+    sort,
     page,
     pageSize,
     total,
